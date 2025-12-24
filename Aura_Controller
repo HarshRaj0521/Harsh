@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A.U.R.A. Command Center</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-orange: #ff8c00;
+            --bg-dark: #0a0b10;
+            --card-bg: #161b22;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--neon-blue);
+            width: 100%;
+            padding-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 243, 255, 0.2);
+        }
+
+        h1 { font-size: 2.5rem; letter-spacing: 5px; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        .status-badge {
+            background: rgba(0, 255, 0, 0.1);
+            color: #39ff14;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid #39ff14;
+        }
+
+        /* Sliders */
+        .control-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 10px; color: var(--neon-blue); font-weight: bold; }
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--neon-blue);
+        }
+
+        /* Emotion Buttons */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 20px var(--neon-blue); }
+
+        .battery-container { font-size: 1.5rem; color: var(--neon-orange); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>A.U.R.A. v1.0</h1>
+        <span class="status-badge">SYSTEMS ONLINE</span>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <h3>TELEMETRY</h3>
+            <div class="battery-container">🔋 Battery: <span id="battVal">--</span>%</div>
+            <p style="color: #888;">ESP32 Core Temp: 42°C</p>
+        </div>
+
+        <div class="card">
+            <h3>MOTION CONTROL</h3>
+            <div class="control-group">
+                <label>HEAD ROTATION: <span id="hVal">90</span>°</label>
+                <input type="range" min="0" max="180" value="90" oninput="updateVal('head', this.value)">
+            </div>
+            <div class="control-group">
+                <label>LEFT ARM: <span id="lVal">0</span>°</label>
+                <input type="range" min="0" max="180" value="0" oninput="updateVal('l_arm', this.value)">
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>EXPRESSIONS</h3>
+            <div class="btn-grid">
+                <button class="btn" onclick="sendEmotion('HAPPY')">😊 HAPPY</button>
+                <button class="btn" onclick="sendEmotion('ANGRY')">😠 ANGRY</button>
+                <button class="btn" onclick="sendEmotion('SAD')">😢 SAD</button>
+                <button class="btn" onclick="sendEmotion('SURPRISED')">😲 SURPRISED</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // REPLACE WITH YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Update Slider Values to Firebase
+        function updateVal(part, val) {
+            document.getElementById(part.charAt(0) + 'Val').innerText = val;
+            db.ref('aura/motors/' + part).set(parseInt(val));
+        }
+
+        // Send Expression
+        function sendEmotion(type) {
+            db.ref('aura/expression').set(type);
+        }
+
+        // Listen for Battery from ESP32
+        db.ref('aura/battery').on('value', (snapshot) => {
+            document.getElementById('battVal').innerText = snapshot.val();
+        });
+    </script>
+</body>
+</html>
